@@ -4,7 +4,7 @@
     "version"       : "0.0.1",
     "authors"       : [ "github:pierre-vigier" ],
     "description"   : "Simple Sudoku solver",
-    "depends"       : [ ],
+    "depends"       : [ "Terminal::ANSIColor" ],
     "provides"      : {
         "Acme::Sudoku"    : "lib/Acme/Sudoku.pm6"
     },
