@@ -2,7 +2,7 @@ use v6;
 use Test;
 use Acme::Sudoku;
 
-#plan 3;
+plan 1;
 
 my $game = Acme::Sudoku.new( q:to/END/ );
 2 . . 1 7 . 6 . 3
@@ -16,8 +16,6 @@ my $game = Acme::Sudoku.new( q:to/END/ );
 9 . 6 . 3 7 . . 2
 END
 $game.solve;
-say $game;
-say $game.export;
 
 my $solution = Acme::Sudoku.new( q:to/END/ );
 2 9 8 1 7 5 6 4 3
