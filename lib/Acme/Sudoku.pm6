@@ -15,34 +15,31 @@ class Cell {
     has $.initial is required;
     has $.solved is rw = Int;
     has $.candidates is rw = ();
+    has $.current-candidate is rw = Int;
 
-    method is-empty {
-        return $.value eq "."
+    method is-empty( Bool $only-final = True ) {
+        return $.value($only-final) eq "."
     }
 
     method Str(Cell:D: --> Str) {
         if $.solved.defined {
             return colored(~$.solved,'red');
         }
+        if $.current-candidate.defined {
+            return colored(~$.current-candidate,'green');
+        }
         return colored(~$.initial,'blue');
     }
 
     method gist(Cell:D: --> Str) {
-        return $.value;
+        return $.value(False);
     }
 
-    method value(Cell:D: --> Str) {
-        return ~($.solved//$.initial);
-    }
-
-    method value-debug(Cell:D: --> Str) {
-        if $.solved {
-            say "$.solved -- $.initial";
-        } else {
-            say "undef -- $.initial";
+    method value(Cell:D: Bool $only-final = True --> Str) {
+        if $only-final {
+            return ~($.solved//$.initial);
         }
-        #say "{$.solved??$.solved||'undef'} -- " ~ $.initial;
-        return ~($.solved//$.initial);
+        return ~($.solved//$.current-candidate//$.initial);
     }
 }
 
@@ -61,6 +58,18 @@ method new( Str $grid ) {
     }
 
     self.bless( cells => @c );
+}
+
+method export(Acme::Sudoku:D: --> Str) {
+    my $str;
+    for ^9 -> $r {
+        for ^9 -> $c {
+            $str ~= " " if ?$c;
+            $str ~= @!cells[$r][$c];
+        }
+        $str ~= "\n";
+    }
+    return $str;
 }
 
 method gist(Acme::Sudoku:D: --> Str) {
@@ -94,9 +103,53 @@ method is-valid(Acme::Sudoku:D: --> Bool) {
 }
 
 method solve(Acme::Sudoku:D: --> Nil) {
+    #initialize easy solution with naive method, to prepare backtracking and reduce combinations
+    say "First part of the solution";
     while my $cnt = self.one-pass-candidates() {
         note "Pass #{$++} : case solved : $cnt";
     }
+    #self.one-pass-candidates();
+
+    say "Second part of the solution";
+    self.iterate-with-backtracking( 0 );
+    say ''; #new line
+}
+
+method iterate-with-backtracking(Acme::Sudoku:D: Int $position --> Bool) {
+    return True if $position == 81;
+
+    print '.';
+    my $r = $position div 9;
+    my $c = $position % 9;
+
+    if !@!cells[$r;$c].is-empty {
+        return self.iterate-with-backtracking( $position + 1 );
+    }
+
+    for @!cells[$r;$c].candidates.unique -> $value {
+        @!cells[$r;$c].current-candidate = Int;
+        my $ir = self.missing-on-row( $value, $r, False, $position == 0);
+        my $ic = self.missing-on-column( $value, $c, False , $position == 0);
+        my $is = self.missing-on-square( $value, ($r div 3)*3+($c div 3), False, $position == 0 );
+        if $ir and $ic and $is {
+            @!cells[$r;$c].current-candidate = $value;
+            return True if self.iterate-with-backtracking( $position + 1 );
+        }
+    }
+    @!cells[$r;$c].current-candidate = Int;
+    return False;
+}
+
+method missing-on-row(Acme::Sudoku:D: Int $value, Int $row, Bool $only-final = True, Bool $debug = False --> Bool) {
+    +$value (elem) ( (1..9) (-) @!cells[$row;*].grep(!*.is-empty($only-final) ).map( +*.value($only-final) ) );
+}
+method missing-on-column(Acme::Sudoku:D: Int $value, Int $column, Bool $only-final = True, Bool $debug = False --> Bool) {
+    +$value (elem) ( (1..9) (-) @!cells[*;$column].grep(!*.is-empty($only-final) ).map( +*.value($only-final) ) );
+}
+method missing-on-square(Acme::Sudoku:D: Int $value, Int $square, Bool $only-final = True, Bool $debug = False --> Bool) {
+    my $r = ($square div 3) * 3;
+    my $c = ($square % 3) * 3;
+    +$value (elem) ( (1..9) (-) @!cells[ $r..$r+2;$c..$c+2].grep(!*.is-empty($only-final)).map( +*.value($only-final) ) );
 }
 
 method one-pass-candidates(Acme::Sudoku:D: --> Int ) {
@@ -117,7 +170,7 @@ method one-pass-candidates(Acme::Sudoku:D: --> Int ) {
         next unless @!cells[$r;$c].is-empty;
 
         my $intersect = %missing-per-row{$r} (&) %missing-per-column{$c} (&) %missing-per-square{($r div 3)*3+($c div 3)};
-        @!cells[$r;$c].candidates = $intersect.keys.list;
+        @!cells[$r;$c].candidates = $intersect.keys.list.sort;
 
         if @!cells[$r;$c].candidates.elems == 1 {
             @!cells[$r;$c].solved = @!cells[$r;$c].candidates.first;
@@ -129,7 +182,7 @@ method one-pass-candidates(Acme::Sudoku:D: --> Int ) {
 
 method ACCEPTS(Acme::Sudoku:D: $b --> Bool ) {
     for ^9 X ^9 -> ($r, $c) {
-        return False if @!cells[$r;$c].value != $b.cells[$r;$c].value;
+        return False if @!cells[$r;$c].value(False) != $b.cells[$r;$c].value(False);
     }
     return True;
 }
