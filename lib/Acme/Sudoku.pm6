@@ -131,10 +131,10 @@ method iterate-with-backtracking(Acme::Sudoku:D: Int $position, Bool :$interacti
 
     for @!cells[$r;$c].candidates.unique -> $value {
         @!cells[$r;$c].current-candidate = Int;
-        my $ir = self.missing-on-row( $value, $r, False, $position == 0);
-        my $ic = self.missing-on-column( $value, $c, False , $position == 0);
-        my $is = self.missing-on-square( $value, ($r div 3)*3+($c div 3), False, $position == 0 );
-        if $ir and $ic and $is {
+        if self.missing-on-row( $value, $r, False, $position == 0)
+            and self.missing-on-column( $value, $c, False , $position == 0)
+            and self.missing-on-square( $value, ($r div 3)*3+($c div 3), False, $position == 0 )
+        {
             @!cells[$r;$c].current-candidate = $value;
             return True if self.iterate-with-backtracking( $position + 1, :$interactive );
         }
