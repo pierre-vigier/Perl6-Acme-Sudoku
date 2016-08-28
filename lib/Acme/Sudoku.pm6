@@ -102,28 +102,31 @@ method is-valid(Acme::Sudoku:D: --> Bool) {
     return True;
 }
 
-method solve(Acme::Sudoku:D: --> Nil) {
+method solve(Acme::Sudoku:D: Bool :$interactive = False --> Nil) {
+    say $interactive;
     #initialize easy solution with naive method, to prepare backtracking and reduce combinations
     say "First part of the solution";
     while my $cnt = self.one-pass-candidates() {
-        note "Pass #{$++} : case solved : $cnt";
+        say "\e[2J" ~ self.gist if $interactive;
+        #note "Pass #{$++} : case solved : $cnt";
     }
     #self.one-pass-candidates();
 
     say "Second part of the solution";
-    self.iterate-with-backtracking( 0 );
+    self.iterate-with-backtracking( 0, :$interactive );
     say ''; #new line
 }
 
-method iterate-with-backtracking(Acme::Sudoku:D: Int $position --> Bool) {
+method iterate-with-backtracking(Acme::Sudoku:D: Int $position, Bool :$interactive = False --> Bool) {
     return True if $position == 81;
 
-    print '.';
+    say "\e[2J" ~ self.gist if $interactive;
+    #print '.';
     my $r = $position div 9;
     my $c = $position % 9;
 
     if !@!cells[$r;$c].is-empty {
-        return self.iterate-with-backtracking( $position + 1 );
+        return self.iterate-with-backtracking( $position + 1, :$interactive );
     }
 
     for @!cells[$r;$c].candidates.unique -> $value {
@@ -133,7 +136,7 @@ method iterate-with-backtracking(Acme::Sudoku:D: Int $position --> Bool) {
         my $is = self.missing-on-square( $value, ($r div 3)*3+($c div 3), False, $position == 0 );
         if $ir and $ic and $is {
             @!cells[$r;$c].current-candidate = $value;
-            return True if self.iterate-with-backtracking( $position + 1 );
+            return True if self.iterate-with-backtracking( $position + 1, :$interactive );
         }
     }
     @!cells[$r;$c].current-candidate = Int;
