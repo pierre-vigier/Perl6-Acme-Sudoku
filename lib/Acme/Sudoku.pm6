@@ -144,15 +144,24 @@ method iterate-with-backtracking(Acme::Sudoku:D: Int $position, Bool :$interacti
 }
 
 method missing-on-row(Acme::Sudoku:D: Int $value, Int $row, Bool $only-final = True, Bool $debug = False --> Bool) {
-    +$value (elem) ( (1..9) (-) @!cells[$row;*].grep(!*.is-empty($only-final) ).map( +*.value($only-final) ) );
+    for @!cells[$row;*] -> $c {
+        return False if !$c.is-empty($only-final) and $c.value($only-final) == $value;
+    }
+    return True;
 }
 method missing-on-column(Acme::Sudoku:D: Int $value, Int $column, Bool $only-final = True, Bool $debug = False --> Bool) {
-    +$value (elem) ( (1..9) (-) @!cells[*;$column].grep(!*.is-empty($only-final) ).map( +*.value($only-final) ) );
+    for @!cells[*;$column] -> $c {
+        return False if !$c.is-empty($only-final) and $c.value($only-final) == $value;
+    }
+    return True;
 }
 method missing-on-square(Acme::Sudoku:D: Int $value, Int $square, Bool $only-final = True, Bool $debug = False --> Bool) {
     my $r = ($square div 3) * 3;
     my $c = ($square % 3) * 3;
-    +$value (elem) ( (1..9) (-) @!cells[ $r..$r+2;$c..$c+2].grep(!*.is-empty($only-final)).map( +*.value($only-final) ) );
+    for @!cells[ $r..$r+2;$c..$c+2] -> $c {
+        return False if !$c.is-empty($only-final) and $c.value($only-final) == $value;
+    }
+    return True;
 }
 
 method one-pass-candidates(Acme::Sudoku:D: --> Int ) {
