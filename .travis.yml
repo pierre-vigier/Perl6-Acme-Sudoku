@@ -2,7 +2,7 @@ language: perl6
 perl6:
   - latest
 install:
-  - rakudobrew build-panda
+  - rakudobrew build-panda ${TRAVIS_PERL6_VERSION#latest}
   - panda installdeps .
   - panda install Test::META
 script:
